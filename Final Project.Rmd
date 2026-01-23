@@ -1,0 +1,172 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+This is my final project for Introduction to Scientific Computing, I will be doing a full linear regression analysis on the Hitters dataset from the ISLR package. 
+
+Exploratory Analysis:
+
+Overview:
+
+```{r}
+#loading necessary libraries
+library(ISLR)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+
+#First look at the data
+data(Hitters)
+summary(Hitters)
+```
+
+```{r}
+help(Hitters) #information about the dataset
+```
+
+The first thing is looking at and analyzing the data given to us. The data is structured as a data frame with 322 rows of observations of major league players from the 1986 and 1987 seasons. There are 20 variables: AtBat, Hits, HmRun, Runs, RBI, Walks, Years, CAtBat, CHits, CHmRun, CRuns, CRBI, CWalks, League, Division, PutOuts, Assists, Errors, Salary, and NewLeague. AtBat measures the number of times at bat in 1986, Hits measures the number of hits in 1986, HmRun measures the number of home runs in 1986, Runs measures the number of runs in 1986, RBI measures the number of runs batted in in 1986, Walks measures the number of walks in 1986, Years measures the number of years in the major leagues, CAtBat measures the number of times at bat during their career, CHits measures the number of hits during their career, CHmRun measures the number of home runs during their career, CRuns measures the number of runs during their career, CRBI measures the number of runs batted in during their career, CWalks measures the number of walks during their career, League measures the player’s league at the end of 1986, Division measures the player’s division at the end of 1986, PutOuts measures the number of put outs in 1986, Assists measures the number of assists in 1986, Errors measures the number of errors in 1986, Salary measures the 1987 annual salary on opening day in thousands of dollars, and NewLeague measures the player’s league at the beginning of 1987. League, Division, and NewLeague are categorical variables, and the rest are continuous. 
+
+Data Cleaning:
+
+```{r}
+sum(is.na(Hitters)) #checking for missing values
+colSums(is.na(Hitters)) #checking which column they are in
+```
+The first line of code told me that there are 59 missing values, and the second told me that these are all from the salary column. Usually this may be cause to delete the column and continue with our analysis, however since it is the response variable, I will instead delete the rows with this missing data.
+
+```{r}
+Hitters1 <- na.omit(Hitters) #creating a copy of the data set with the null values removed
+nrow(Hitters1)
+```
+Next, we have to make sure all the data is in the correct form and if not we have to fix them.
+
+```{r}
+sapply(Hitters1, class) #finding the class of each column
+```
+What needs to get changed is integer should be numeric to account for any non whole numbers in the data.
+
+```{r}
+Hitters1 <- Hitters1 %>% #changing integer to numeric for the necessary columns
+mutate(across(c(AtBat, Hits, HmRun, Runs, RBI, Walks, Years, CAtBat, CHits, CHmRun, CRuns, CRBI, CWalks, PutOuts, Assists, Errors), as.numeric))
+sapply(Hitters1, class) #checking to make sure it worked
+```
+Now that our data is all cleaned we can do a full numeric analysis on it. Starting off with a summary of all the numeric data.
+
+Numeric Analysis:
+
+```{r}
+numeric_vars <- select(Hitters1, where(is.numeric)) #creating a subset of only the numeric variables
+summary(numeric_vars) #gathering info
+```
+Next, the range and spread (aka standard deviation and variance) of the data.
+
+```{r}
+apply(numeric_vars, 2, function(x) c(Range = max(x) - min(x), SD = sd(x), Variance = var(x)))
+```
+Then a correlation analysis to see which variables have the most to do with our response variable Salary
+
+```{r}
+cor_salary <- cor(numeric_vars$Salary, numeric_vars)
+cor_salary
+```
+Here we can see that the most correlated variables with Salary are CRBI, CRuns, CHits, CAtBat, and CHmRun, which shows that career statistics are strong predictors of Salary. In contrast, Errors, Assists, and PutOuts are the least correlated variables, suggesting that these variables are not meaningful predictors of Salary.
+
+
+Next, we are going to do some visualizations. Using our response variable salary, we are going to make a few plots. The first is a histogram for salary. 
+
+Visual Analysis:
+
+```{r}
+ggplot(Hitters1, aes(x = Salary)) +
+  geom_histogram(binwidth = 50, fill = "blue", color = "black", alpha = 0.7) +
+  labs(title = "Salary Distribution", x = "Salary in Thousands", y = "Frequency")
+```
+
+We can see here that most players made in the 0 to 1,000,000 million range for the 1987 season.
+
+```{r}
+ggplot(Hitters1, aes(x = League, y = Salary)) +
+  geom_boxplot(fill = "lightblue", color = "black") +
+  labs(title = "Boxplot of Salary by League", x = "League: American vs National", y = "Salary")
+```
+
+Here we can see that while the American league had a larger spread of salaries, the National League had a higher median salary.
+
+
+Next, a scatter plot between the most correlated variable to salary.
+```{r}
+plot(Hitters1$CRBI, Hitters1$Salary,
+     main = "Salary vs CRBI",
+     xlab = "CRBI",
+     ylab = "Salary",
+     pch = 20, 
+     col = "blue")
+```
+
+Here we can a positive correlation between the number of runs batted in during his career and the salary they recieved. Showcasing that a higher number of runs batted means a higher salary.
+
+Next, a scatterplot between the least correlated variable to salary.
+```{r}
+plot(Hitters1$Errors, Hitters1$Salary,
+     main = "Salary vs Errors",
+     xlab = "Errors",
+     ylab = "Salary",
+     pch = 20,
+     col = "blue")
+```
+
+Here we can see there is not correlation between the two values showcasing that error has very little impact on salary.
+
+
+Finally, a pairplot with the most correlated variables to salary. 
+```{r}
+selected_vars <- Hitters1[, c("CHits", "CRuns", "CRBI", "CAtBat", "Salary")]
+
+pairs(selected_vars,
+      main = "Pairwise Plot: CHits, CRuns, CRBI, CAtBat vs Salary",
+      col = "darkseagreen3",
+      pch = 20,
+      labels = c("CHits", "CRuns", "CRBI", "CAtBat", "Salary"))
+```
+
+Here we can see that most of the graphs show a positive correlation meaning as they increase, so does the predicted salary of the player. 
+
+Regression Analysis:
+
+Now onto the regression analysis. First we are going to decide which predictors to use in our model. 
+```{r}
+full_model <- lm(Salary ~ ., data = Hitters1)
+summary(full_model)
+```
+Based on p-values, we can see that the significant variables are AtBat, Hits, Walks, CWalks, Division, PutOuts. 
+
+```{r}
+model <- lm(Salary ~ AtBat + Hits + Walks + CWalks + Division + PutOuts, data = Hitters1)
+plot(model)
+```
+
+For residual vs fitted the linearity assumption does not seems to be violated so I wouldn't really change anything. While the data does not follow the line exactly, the line is relatively straight. For the residual vs leverage plot there are some outliers, I will try to fix it by removing them and then recomputing the model. For the scale-location plot I would say there is a discernible pattern meaning, the homoscedasticity assumption appears to be violated, I am going to fix the other issues first and then see if it fixes itself. For Q-Q residuals, the data does not fall on the line y=x but does closely follow the reference line so I am going to say it is normally distributed.
+
+
+Fixing residual vs leverage plot by removing the outliers. I noticed that most of the outliers were after 0.07 on the leverage scale so by removing all the points with a leverage greater than .07 I effectively remove all the outliers:
+```{r}
+leverage_values <- hatvalues(model)
+outliers_leverage <- which(leverage_values > 0.07)
+Hitters_clean <- Hitters1[-outliers_leverage, ]
+model_clean <- lm(Salary ~ AtBat + Hits + Walks + Division + PutOuts, data = Hitters_clean)
+plot(model_clean)
+```
+
+By removing the outliers I fixed both the residual vs leverage plot by getting rid of the outliers so now the data is all close to each other and the scale-location plot by having the data no discernable pattern in the spread of the points because the outliers aren't pulling the data in one direction. 
+
+```{r}
+summary(model_clean)
+```
+I would say by final model is not the best. Going off the R-squared value, my model does not fit the data very well. I think this could be because of a few reasons, one that I am using a subset of a larger dataset meaning the whole picture isn't being shown, the second is that the relationship between the variables and salary might not be exactly linear, and lastly, I could have not cleaned the data properly enough during the model assumptions. 
+
+
+Conclusion:
+
+In my work, I analyzed the Hitters dataset from the ISLR package and was able to do a few things. I learned about the data and did some necessary cleaning to remove empty rows and fix the column labels so they were accurate to the data. Then I created a smaller subset with just numeric data so I could run analysis on it. Using our response variable I learned about which factors contributed most to salary, and which contributed least. With things like player statistics contribute more and game statistics less. I then created some graphs to showcase both how individual variables look in the dataset and also how they relate to other ones. Then I completed a regression analysis and cleaned the data even more to create my final model. Overall this process taught me a lot about being meticulous and making sure to double check all my code. Something I kept forgetting was that I made a copy of the dataset to do work on which is what was cleaned and when the graphs would look weird or the code wouldn't work I would have to remind myself to go back and check to make sure I used the right dataset. I think what was unusual about this project was that the all of the data was in a one or two year period over different leagues, not one league over time so sometimes it was hard to think about what questions I wanted to answer with my analysis. I did enjoy doing this and I like how completed it feels and how accomplished I feel.
+
