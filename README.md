@@ -1,2 +1,2 @@
 # Baseball-Linear-Regression-Analysis
-Full linear regression analysis on the Hitters dataset from the ISLR package
+Used R to do a full linear regression analysis on the Hitters dataset from the ISLR package
